@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <h1>CCTV 영상 출력</h1>
+    <h3 id="CCTVName"><%= data.CCTVName %></h3>
+    <!-- Change this to an img tag -->
+    <img id="CCTVImage" alt="CCTV Image" style="width: auto; height: auto" />
+
+    <script src="https://cdn.jsdelivr.net/npm/socket.io@4.7.2/client-dist/socket.io.min.js"></script>
+    <script>
+      const socket = io();
+      socket.on("getCCTVImage", data => {
+        console.log("Received CCTV Image Data", data);
+        const imageElement = document.getElementById("CCTVImage");
+        const nameElement = document.getElementById("CCTVName");
+        // Update the src attribute to display the image
+        if (data.CCTVName) {
+          nameElement.textContent = data.CCTVName;
+        }
+        if (data.CCTVImage) {
+          const base64String = btoa(
+            String.fromCharCode(...new Uint8Array(data.CCTVImage))
+          );
+          imageElement.src = `data:image/jpeg;base64,${base64String}`;
+        }
+      });
+    </script>
+  </body>
+</html>

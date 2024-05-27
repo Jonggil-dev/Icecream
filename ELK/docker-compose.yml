@@ -1,0 +1,65 @@
+version: "3.7"
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.10.2
+    container_name: elasticsearch
+    environment:
+      - node.name=elasticsearch
+      - cluster.name=docker-cluster
+      - discovery.type=single-node
+      - xpack.security.enabled=true
+      - ELASTIC_USERNAME=${ELASTIC_USERNAME}
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.10.2
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=${ELASTIC_USERNAME}
+      - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD}
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.10.2
+    container_name: logstash
+    environment:
+      - xpack.monitoring.enabled=true
+      - xpack.monitoring.elasticsearch.username=${ELASTIC_USERNAME}
+      - xpack.monitoring.elasticsearch.password=${ELASTIC_PASSWORD}
+      - ELASTIC_USERNAME=${ELASTIC_USERNAME}
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+    ports:
+      - "5044:5044"
+      - "9600:9600"
+    # volumes:
+    # - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+    depends_on:
+      - elasticsearch
+
+  setup:
+    image: curlimages/curl:7.73.0
+    container_name: setup
+    entrypoint: >
+      sh -c "
+      until curl -u ${ELASTIC_USERNAME}:${ELASTIC_PASSWORD} -X PUT 'http://elasticsearch:9200/_template/default_template' -H 'Content-Type: application/json' -d @/usr/share/elasticsearch/config/index-template.json
+      do
+        echo 'Waiting for Elasticsearch...'
+        sleep 5
+      done"
+    volumes:
+      - ./index-template.json:/usr/share/elasticsearch/config/index-template.json
+    depends_on:
+      - elasticsearch
+
+volumes:
+  esdata:
+    driver: local

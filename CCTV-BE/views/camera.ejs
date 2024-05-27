@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <h1>CCTV 송출</h1>
+    <video id="video" autoplay></video>
+    <script src="https://cdn.jsdelivr.net/npm/socket.io@4.7.2/client-dist/socket.io.min.js"></script>
+    <script>
+      const socket = io();
+
+      // 웹캠 접근 요청
+      navigator.mediaDevices
+        .getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "environment" } })
+        .then(stream => {
+          const video = document.getElementById("video");
+          video.srcObject = stream;
+          video.onloadedmetadata = () => {
+            video.width = video.videoWidth;
+            video.height = video.videoHeight;
+            console.log(video.width, video.height);
+
+            const track = stream.getVideoTracks()[0];
+            const capabilities = track.getCapabilities();
+
+            // 줌 기능이 지원되는지 확인
+            if (capabilities.zoom) {
+              console.log(`Zoom min: ${capabilities.zoom.min}`);
+              console.log(`Zoom max: ${capabilities.zoom.max}`);
+              console.log(`Zoom step: ${capabilities.zoom.step}`);
+
+              // 줌 값 설정 (가능한 범위 내에서 설정)
+              const zoomValue =
+                (capabilities.zoom.max + capabilities.zoom.max) / 2; // 중간값으로 설정
+              track
+                .applyConstraints({
+                  advanced: [{ zoom: zoomValue }],
+                })
+                .then(() => {
+                  console.log(`Zoom applied: ${zoomValue}`);
+                })
+                .catch(e => {
+                  console.error("Failed to apply zoom constraints:", e);
+                });
+            } else {
+              console.log("Zoom is not supported by this camera.");
+            }
+          };
+          video.play();
+
+
+          // 스트림을 캔버스에 그리고 이미지 데이터를 서버에 전송
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+
+          setInterval(() => {
+            canvas.width = 640;
+            canvas.height = 480;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob(blob => {
+              if (!blob) {
+                console.error("canvas.toBlob failed");
+                return;
+              }
+              const reader = new FileReader();
+              reader.readAsArrayBuffer(blob);
+              reader.onloadend = () => {
+                const byteArray = new Uint8Array(reader.result);
+                socket.emit("sendCCTVImage", {
+                  CCTVImage: byteArray,
+                  CCTVName: "CCTV 위치",
+                });
+              };
+            }, "image/jpeg");
+          }, 1000 / 24); // 매 초마다 이미지 전송
+        })
+        .catch(error => {
+          console.error("Camera access denied:", error);
+        });
+    </script>
+  </body>
+</html>

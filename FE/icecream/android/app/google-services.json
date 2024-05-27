@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1003835374197",
+    "project_id": "icecream-ed8d2",
+    "storage_bucket": "icecream-ed8d2.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1003835374197:android:145791219d3540f497d63c",
+        "android_client_info": {
+          "package_name": "com.example.icecream"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBCqpoIMNYHUaELwRHzRM30GPO9pbd6s1k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
